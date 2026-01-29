@@ -68,14 +68,15 @@ public:
 			}
 		}
 	
+		// 코루틴 재개
+		void Resume() const;
+
+	
 	// 내부 연결
 	
 		// Promise 포인터 설정
 		// 코루틴이 실행되는 동안 Promise 의 위치를 기억
-		void SetPromise(Coro::Private::FPromise* InPromise)
-		{
-			Promise = InPromise;
-		}
+		void SetPromise(Coro::Private::FPromise* InPromise);
 	
 private:
 	// 원자적 상태 변수 (Thread-Safe)

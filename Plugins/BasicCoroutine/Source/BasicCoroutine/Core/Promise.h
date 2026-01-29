@@ -33,14 +33,27 @@ namespace Coro::Private
 			return std::forward<T>(Awaitable);
 		}
 		
+		void SetCoroutineHandle(std::coroutine_handle<> Handle)
+		{
+			CoroutineHandle = Handle;
+		}
+		
+		void Resume()
+		{
+			if (CoroutineHandle)
+			{
+				CoroutineHandle.resume();
+			}
+		}
+		
 		// 코루틴 표준 인터페이스
 		
 		// [필수 1.] 코루틴 시작 시 대기 여부
-		// suspend_never 을 만나면 바로 실행
+		// suspend_never 로 설정하면 바로 실행
 		std::suspend_never initial_suspend() const noexcept { return {}; }
 		
 		// [필수 2.] 코루틴 종료 시 대기 여부
-		// suspend_never 을 만나면 즉시 종료, awaiter 를 구현하면 suspend_always 를 사용하는 것도 구현 가능
+		// suspend_never 로 설정하면 즉시 종료, awaiter 를 구현하면 suspend_always 를 사용하는 것도 구현 가능
 		std::suspend_never final_suspend() const noexcept { return {}; }
 		
 		// [필수 3.] 예외 처리
@@ -50,6 +63,9 @@ namespace Coro::Private
 	protected:
 		// Task 과 공유하는 Context 포인터
 		TSharedPtr<FCoroContext> Context;
+		
+		// 코루틴 핸들 저장
+		std::coroutine_handle<> CoroutineHandle;
 	};
 		
 	// [TCoroPromise 의 역할] 리턴 타입 T 에 특화
@@ -65,6 +81,9 @@ namespace Coro::Private
 			
 			// 2. Context 와 Promise 연결
 			Context->SetPromise(this);
+			
+			// 자신 (TCoroPromise) 의 Handle 을 저장 
+			SetCoroutineHandle(std::coroutine_handle<TCoroPromise>::from_promise(*this));
 			
 			// 3. Task 에 Context 를 담아서 반환
 			return TCoroTask<T>(Context);
