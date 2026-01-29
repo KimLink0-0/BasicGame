@@ -23,6 +23,16 @@ namespace Coro::Private
 			}
 		}
 		
+		// co_await 변환 함수
+		// 코루틴 안에서 co_await X; 를 호출하면 -> await_transform(X) 가 호출
+		template<typename T>
+		decltype(auto) await_transform(T&& Awaitable)
+		{
+			// 들어온 Awaiter 를 그대로 반환
+			// 나중에 분기처리 로직이 들어올 예정
+			return std::forward<T>(Awaitable);
+		}
+		
 		// 코루틴 표준 인터페이스
 		
 		// [필수 1.] 코루틴 시작 시 대기 여부

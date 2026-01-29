@@ -9,7 +9,9 @@ public class BasicCoroutine : ModuleRules
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
 		PublicIncludePaths.AddRange(
-			new string[] {
+			new string[] 
+			{
+				"BasicCoroutine"
 			}
 			);
 				

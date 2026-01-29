@@ -4,6 +4,7 @@
 #include "CoroutineTestActor.h"
 
 #include "BasicGameLogChannel.h"
+#include "BasicCoroutine/Awaiters/TestAwaiter.h"
 
 ACoroutineTestActor::ACoroutineTestActor()
 {
@@ -11,7 +12,12 @@ ACoroutineTestActor::ACoroutineTestActor()
 
 TCoroTask<void> ACoroutineTestActor::FirstTestCoroutine()
 {
-	UE_LOG(LogBG, Log, TEXT("Hello Coroutine!"));
+	UE_LOG(LogBG, Log, TEXT("1. Start Coroutine"));
+	
+	co_await Coro::Test::WaitNextTick();
+	
+	UE_LOG(LogBG, Log, TEXT("2. Resume Coroutine"))
+	
 	co_return;
 }
 
