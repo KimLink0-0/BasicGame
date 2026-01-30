@@ -3,6 +3,9 @@
 #include "CoreMinimal.h"
 #include <coroutine>
 
+template<typename T = void>
+class TCoroTask;
+
 namespace Coro::Private
 {
 	// Context 전방 선언
