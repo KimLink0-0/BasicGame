@@ -19,6 +19,12 @@ namespace Coro::Private
 	
 	template<typename T>
 	class TPromise;
+	
+	// LatentAction 전방 선언
+	class FLatentAction;
+	
+	// ILatentPollable 전방 선언
+	class ILatentPollable;
 }
 
 using FCoroContextPtr = TSharedPtr<Coro::Private::FCoroContext, ESPMode::ThreadSafe>;
