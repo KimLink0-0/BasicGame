@@ -13,6 +13,12 @@ namespace Coro::Private
 	
 	template<typename T>
 	struct TCoroContext;
+	
+	// Promise 전방 선언
+	class FPromise;
+	
+	template<typename T>
+	class TPromise;
 }
 
 using FCoroContextPtr = TSharedPtr<Coro::Private::FCoroContext, ESPMode::ThreadSafe>;

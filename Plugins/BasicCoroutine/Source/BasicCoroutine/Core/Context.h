@@ -26,35 +26,22 @@ namespace Coro::Private
 		FCoroContext& operator=(const FCoroContext&) = delete;
 		
 		// 상태 조회 (Read)
-		bool IsDone() const
-		{
-			ECoroState Current = State.load(std::memory_order_relaxed);
-			return Current == ECoroState::Completed || Current == ECoroState::Canceled;
-		}
+		bool IsDone() const;
 		
 		// 상태 변경 (Write)
-		void MarkCompleted()
-		{
-			State.store(ECoroState::Completed, std::memory_order_relaxed);
-		}
+		void MarkCompleted();
 		
-		void Cancel()
-		{
-			ECoroState Expected = ECoroState::Pending;
-			if (!State.compare_exchange_strong(Expected, ECoroState::Canceled))
-			{
-				Expected = ECoroState::Running;
-				State.compare_exchange_strong(Expected, ECoroState::Canceled);
-			}
-		}
-		void Resume() const
-		{
-			
-		}
+		void Cancel();
+		
+		void Resume() const;
+		
+		void SetPromise(FPromise* InPromise);
 		
 	protected:
 		// 기본 상태: 대기 중
 		std::atomic<ECoroState> State = ECoroState::Pending;
+		
+		FPromise* Promise = nullptr;
 	};
 	
 	// 코루틴의 결과 값을 담는 템플릿 
