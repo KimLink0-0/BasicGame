@@ -11,3 +11,11 @@ namespace Coro::Private
 	template<typename T>
 	struct TCoroContext;
 }
+
+using FCoroContextPtr = TSharedPtr<Coro::Private::FCoroContext, ESPMode::ThreadSafe>;
+
+template<typename T>
+using TCoroContextPtr = TSharedPtr<Coro::Private::TCoroContext<T>, ESPMode::ThreadSafe>;
+
+template<typename T>
+using TCoroContextWeakPtr = TWeakPtr<Coro::Private::TCoroContext<T>, ESPMode::ThreadSafe>;
