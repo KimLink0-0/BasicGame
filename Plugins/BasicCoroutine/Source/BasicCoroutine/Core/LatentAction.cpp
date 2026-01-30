@@ -26,7 +26,15 @@ namespace Coro::Private
 			return;
 		}
 		
-		// 대기가 끝났으면, Resume() 후 종료
+		// 재개 조건 확인: Awaiter 의 ShouldResume 가 true 면 
+		// Awaiter 초기화, State 를 Completed 로 변환 후 Resume() 프로세스로 넘어감 
+		if (State == ECoroLatentActionState::Running && Awaiter->ShouldResume())
+		{
+			Awaiter = nullptr;
+			State = ECoroLatentActionState::Completed;
+		}
+		
+		// Resume() 프로세스: 대기가 끝났으면, Resume() 후 종료
 		if (State == ECoroLatentActionState::Completed)
 		{
 			Context->Resume();
