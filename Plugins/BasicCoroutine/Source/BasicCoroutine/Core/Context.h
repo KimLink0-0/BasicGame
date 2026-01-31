@@ -31,10 +31,9 @@ namespace Coro::Private
 		// 상태 변경 (Write)
 		void MarkCompleted();
 		
-		void Cancel();
-		
 		void Resume() const;
 		
+		// Promise 설정 용
 		void SetPromise(FPromise* InPromise);
 		
 	protected:

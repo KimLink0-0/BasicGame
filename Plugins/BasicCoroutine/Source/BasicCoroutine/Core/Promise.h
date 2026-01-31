@@ -28,7 +28,6 @@ namespace Coro::Private
 		
 		// Context Getter
 		FCoroContextPtr GetContextForAwaiter() const { return Context;}
-		FCoroContext* GetContext() const { return Context.Get(); }
 		
 		
 		/** Promise 필수 로직 **/
@@ -53,19 +52,9 @@ namespace Coro::Private
 		
 		void Resume() const { CoroutineHandle.resume(); }
 		
-		void DestroyCoroutine()
-		{
-			if (CoroutineHandle)
-			{
-				CoroutineHandle.destroy();
-				CoroutineHandle = nullptr;
-			}
-		}
-		
 	protected:
 		// 코루틴 Getter, Setter 
 		
-		std::coroutine_handle<> GetCoroutineHandle() const { return CoroutineHandle; }
 		
 		void SetCoroutineHandle(std::coroutine_handle<> InHandle) { CoroutineHandle = InHandle; }
 		
