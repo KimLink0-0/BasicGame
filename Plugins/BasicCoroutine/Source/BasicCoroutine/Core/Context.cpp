@@ -9,7 +9,12 @@ namespace Coro::Private
 		ECoroState Current = State.load(std::memory_order_acquire);
 		return Current == ECoroState::Completed || Current == ECoroState::Canceled;
 	}
-		
+
+	bool FCoroContext::IsCancelRequested() const
+	{
+		return bCancelRequested.load(std::memory_order_acquire);
+	}
+
 	void FCoroContext::MarkCompleted()
 	{
 		{
@@ -21,7 +26,54 @@ namespace Coro::Private
 			Promise = nullptr;
 		}
 	}
+
+	void FCoroContext::AddCompletionCallback(TFunction<void()> Callback)
+	{
+		bool bShouldInvokeImmediately = false;
 		
+		{
+			FScopeLock ScopeLock(&Lock);
+			
+			if (IsDone())
+			{
+				bShouldInvokeImmediately = true;
+			}
+			else
+			{
+				CompletionCallbacks.Add(MoveTemp(Callback));
+			}
+		}
+		
+		if (bShouldInvokeImmediately)
+		{
+			Callback();
+		}
+	}
+
+	void FCoroContext::Cancel()
+	{
+		TArray<TFunction<void()>> CallbacksToInvoke;
+		
+		{
+			FScopeLock ScopeLock(&Lock);
+			
+			// 이미 취소 요청이 됐으면 넘어감
+			if (bCancelRequested.load(std::memory_order_acquire))
+			{
+				return;
+			}
+			
+			bCancelRequested.store(true, std::memory_order_release);
+			
+			CallbacksToInvoke = MoveTemp(CancellationCallbacks);
+		}
+		
+		for (const TFunction<void()>& Callback : CallbacksToInvoke)
+		{
+			Callback();
+		}
+	}
+
 	void FCoroContext::Resume() const
 	{
 		if (Promise)
@@ -29,7 +81,23 @@ namespace Coro::Private
 			Promise->Resume();
 		}
 	}
+
+	void FCoroContext::Destroy()
+	{
+		if (IsDone())
+		{
+			return;
+		}
 		
+		if (Promise)
+		{
+			Promise->DestroyCoroutine();
+		}
+		
+		bCancelRequested.store(true, std::memory_order_release);
+		State.store(ECoroState::Canceled, std::memory_order_release);
+	}
+
 	void FCoroContext::SetPromise(FPromise* InPromise)
 	{
 		Promise = InPromise;

@@ -65,4 +65,67 @@ namespace Coro::Private
 	private:
 		TWeakObjectPtr<UObject> Owner;
 	};
+	
+	
+	// 경우의 수가 많으니까 파생 클래스에서 구현하는 방식으로 진행
+	template<typename Derived>
+	class TAsyncAwaiterBase
+	{
+	public:
+		explicit TAsyncAwaiterBase(UObject* InOwner) : Owner(InOwner)
+		{
+		}
+		
+		bool await_ready() const
+		{
+			if constexpr ( requires { static_cast<const Derived*>(this)->Ready();} )
+			{
+				return static_cast<const Derived*>(this)->Ready();
+			}
+			else
+			{
+				return false;
+			}
+		}
+		
+		template<typename Promise>
+		void await_suspend(std::coroutine_handle<Promise> Handle)
+		{
+			Context = Handle.Promise().GetContextShared();
+			static_cast<Derived*>(this)->Suspend();
+		}
+		
+		//
+		auto await_resume()
+		{
+			if constexpr (requires { static_cast<const Derived*>(this)->GetResult(); })
+			{
+				return static_cast<Derived*>(this)->GetResult();
+			}
+		}
+		
+	protected:
+		TWeakObjectPtr<UObject> Owner;
+		
+		FCoroContextPtr Context;
+	};
+	
+	inline void SafeResume(const TWeakObjectPtr<UObject>& InOwner, const FCoroContextPtr& InContext)
+	{
+		if (!InContext)
+		{
+			return;
+		}
+		
+		if (!InOwner.IsValid() && InContext->IsCancelRequested())
+		{
+			if (!InContext->IsDone())
+			{
+				InContext->Destroy();
+			}
+			return;
+		}
+		
+		InContext->Resume();
+	}
 }

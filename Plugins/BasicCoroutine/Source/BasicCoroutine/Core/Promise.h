@@ -52,6 +52,15 @@ namespace Coro::Private
 		
 		void Resume() const { CoroutineHandle.resume(); }
 		
+		void DestroyCoroutine()
+		{
+			if (CoroutineHandle)
+			{
+				CoroutineHandle.destroy();
+				CoroutineHandle = nullptr;
+			}
+		}
+		
 	protected:
 		// 코루틴 Getter, Setter 
 		

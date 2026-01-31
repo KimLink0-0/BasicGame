@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "BasicCoroutine/Core/Private.h"
+#include "BasicCoroutine/Core/Context.h"
 
 template<>
 class TCoroTask<void>
@@ -28,8 +29,8 @@ public:
 	
 	bool IsValid() const { return Context != nullptr; }
 	
-	// bool IsDone() const { return Context && Context->IsDone(); }
-	//
+	bool IsDone() const { return Context && Context->IsDone(); }
+	
 	// bool WasSuccessful() const { return Context.IsValid() /**&& Context->WasSuccessful()**/; }
 	
 	// 상태 쓰기
@@ -46,22 +47,22 @@ public:
 	// 	return Context.IsValid() /** && Context->Wait(TimeoutMS) **/;
 	// }
 	
-	// void ContinueWith(TFunction<void()> Callback) const
-	// {
-	// 	if (Context)
-	// 	{
-	// 	Context->AddCompletionCallBack(MoveTemp(Callback));
-	// 	}
-	// }
+	void ContinueWith(TFunction<void()> Callback) const
+	{
+		if (Context)
+		{
+			Context->AddCompletionCallback(MoveTemp(Callback));
+		}
+	}
 	
 protected:
-	// Coro::Private::FCoroContext* GetContext() const { return Context.Get(); }
-	//
-	// template<typename T>
-	// TCoroContextPtr<T> GetSharedContext() const
-	// {
-	// 	return StaticCastSharedPtr<Coro::Private::TCoroContext<T>>(Context);
-	// }
+	Coro::Private::FCoroContext* GetContext() const { return Context.Get(); }
+	
+	template<typename T>
+	TCoroContextPtr<T> GetSharedContext() const
+	{
+		return StaticCastSharedPtr<Coro::Private::TCoroContext<T>>(Context);
+	}
 	
 protected:
 	// Member Variables Section
@@ -74,7 +75,7 @@ class TCoroTask : public TCoroTask<void>
 public:
 	using FResultType = T;
 	
-	// using TCoroTask<void>::ContinueWith;
+	using TCoroTask<void>::ContinueWith;
 	
 	TCoroTask() = default;
 	
@@ -82,7 +83,7 @@ public:
 		TCoroTask<void>(InContext)
 	{
 	}
-	//
+	
 	// const T& GetResult() const
 	// {
 	// 	check(IsDone());
@@ -95,19 +96,19 @@ public:
 	// 	return this->template GetSharedContext<T>()->MoveResult();
 	// }
 	
-	// void ContinueWith(TFunction<void(const T&)> Callback) const
-	// {
-	// 	if (Context)
-	// 	{
-	// 		TCoroContextWeakPtr<T> WeakContext = this->template GetSharedContext<T>();
-	// 		
-	// 		Context->AddCompletionCallback([WeakContext, Callback = MoveTemp(Callback)]()
-	// 		{
-	// 			if (TCoroContextPtr<T> StrongContext = WeakContext.Pin())
-	// 			{
-	// 				Callback(StrongContext->GetResult());
-	// 			}
-	// 		});
-	// 	}
-	// }
+	void ContinueWith(TFunction<void(const T&)> Callback) const
+	{
+		if (Context)
+		{
+			TCoroContextWeakPtr<T> WeakContext = this->template GetSharedContext<T>();
+			
+			Context->AddCompletionCallback([WeakContext, Callback = MoveTemp(Callback)]()
+			{
+				if (TCoroContextPtr<T> StrongContext = WeakContext.Pin())
+				{
+					Callback(StrongContext->GetResult());
+				}
+			});
+		}
+	}
 };

@@ -28,10 +28,18 @@ namespace Coro::Private
 		// 상태 조회 (Read)
 		bool IsDone() const;
 		
+		bool IsCancelRequested() const;
+		
 		// 상태 변경 (Write)
 		void MarkCompleted();
 		
+		void AddCompletionCallback(TFunction<void()> Callback);
+		
+		void Cancel();
+		
 		void Resume() const;
+		
+		void Destroy();
 		
 		// Promise 설정 용
 		void SetPromise(FPromise* InPromise);
@@ -40,10 +48,19 @@ namespace Coro::Private
 		// 기본 상태: 대기 중
 		std::atomic<ECoroState> State = ECoroState::Pending;
 		
+		std::atomic<bool> bCancelRequested{false};
+		
 		FPromise* Promise = nullptr;
 		
 		// 동기화 용
 		mutable FCriticalSection Lock;
+		
+		// 완료 콜백 목록 
+		TArray<TFunction<void()>> CompletionCallbacks;
+		
+		// 취소 콜백 목록
+		
+		TArray<TFunction<void()>> CancellationCallbacks;
 	};
 	
 	// 코루틴의 결과 값을 담는 템플릿 
