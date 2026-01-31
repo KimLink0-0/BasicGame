@@ -1,17 +1,25 @@
 ﻿#include "Context.h"
+
+#include "AnalyticsProviderETEventCache.h"
 #include "Promise.h"
 
 namespace Coro::Private
 {
 	bool FCoroContext::IsDone() const
 	{
-		ECoroState Current = State.load(std::memory_order_relaxed);
+		ECoroState Current = State.load(std::memory_order_acquire);
 		return Current == ECoroState::Completed || Current == ECoroState::Canceled;
 	}
 		
 	void FCoroContext::MarkCompleted()
 	{
-		State.store(ECoroState::Completed, std::memory_order_relaxed);
+		{
+			FScopeLock ScopeLock(&Lock);
+			
+			State.store(ECoroState::Completed, std::memory_order_release);
+			
+			Promise = nullptr;
+		}
 	}
 		
 	void FCoroContext::Cancel()

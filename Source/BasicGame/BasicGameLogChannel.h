@@ -5,4 +5,4 @@
 #include "Containers/UnrealString.h"
 #include "Logging/LogMacros.h"
 
-DECLARE_LOG_CATEGORY_EXTERN(LogBG, Log, All);
+DECLARE_LOG_CATEGORY_EXTERN(LogCoro, Log, All);

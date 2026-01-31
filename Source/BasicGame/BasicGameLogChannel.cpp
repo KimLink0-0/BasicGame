@@ -3,4 +3,4 @@
 
 #include "BasicGameLogChannel.h"
 
-DEFINE_LOG_CATEGORY(LogBG);
+DEFINE_LOG_CATEGORY(LogCoro);

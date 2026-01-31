@@ -11,7 +11,7 @@ namespace Coro::Private
 	enum class ECoroLatentActionState : uint8
 	{
 		Running,		// 정상적으로 대기 중
-		Completed,		// Resume 호출 후 종료
+		Completing,		// Resume 호출 후 종료
 		Destroyed,		// OwnerActor 의 파괴 상태, Resume 없이 종료
 	};
 	
@@ -24,7 +24,7 @@ namespace Coro::Private
 		virtual bool ShouldResume() = 0;
 		
 		// 취소 시 정리 작업 진행
-		virtual void OnCancel() = 0;
+		virtual void OnCancel() {};
 	};
 	
 	class BASICCOROUTINE_API FCoroLatentAction : public FPendingLatentAction

@@ -25,6 +25,13 @@ namespace Coro::Private
 	
 	// ILatentPollable 전방 선언
 	class ILatentPollable;
+	
+	// Timer Awaiter 전방 선언
+	class FSecondsAwaiter;
+	
+	class FFramesAwaiter;
+	
+	class FUntilAwaiter;
 }
 
 using FCoroContextPtr = TSharedPtr<Coro::Private::FCoroContext, ESPMode::ThreadSafe>;

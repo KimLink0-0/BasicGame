@@ -141,6 +141,10 @@
 		{
 			"Name": "MovieRenderPipeline",
 			"Enabled": true
+		},
+		{
+			"Name": "CommonCoroutine",
+			"Enabled": false
 		}
 	]
 }

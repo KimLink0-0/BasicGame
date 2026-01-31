@@ -19,23 +19,29 @@ namespace Coro::Private
 
 	void FCoroLatentAction::UpdateOperation(FLatentResponse& Response)
 	{
-		// 만약 오너가 파괴되거나 액션이 종료되면, 재개 없이 종료
+		// Owner가 파괴된 경우 즉시 종료 (Resume 호출 안함)
 		if (State == ECoroLatentActionState::Destroyed)
 		{
 			Response.DoneIf(true);
 			return;
 		}
-		
-		// 재개 조건 확인: Awaiter 의 ShouldResume 가 true 면 
-		// Awaiter 초기화, State 를 Completed 로 변환 후 Resume() 프로세스로 넘어감 
+
+		// Awaiter가 없으면 대기할 것이 없으므로 즉시 종료
+		if (State == ECoroLatentActionState::Running && !Awaiter)
+		{
+			Response.DoneIf(true);
+			return;
+		}
+
+		// 재개 조건 확인
 		if (State == ECoroLatentActionState::Running && Awaiter->ShouldResume())
 		{
 			Awaiter = nullptr;
-			State = ECoroLatentActionState::Completed;
+			State = ECoroLatentActionState::Completing;
 		}
-		
-		// Resume() 프로세스: 대기가 끝났으면, Resume() 후 종료
-		if (State == ECoroLatentActionState::Completed)
+
+		// 완료 대기 상태면 Resume 호출 후 종료
+		if (State == ECoroLatentActionState::Completing)
 		{
 			Context->Resume();
 			Context = nullptr;

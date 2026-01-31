@@ -14,7 +14,7 @@ namespace Coro::Private
 		Canceled,	// 실행 취소
 	};
 	
-	struct FCoroContext
+	struct BASICCOROUTINE_API FCoroContext
 	{
 	public:
 		// 생성자
@@ -42,17 +42,39 @@ namespace Coro::Private
 		std::atomic<ECoroState> State = ECoroState::Pending;
 		
 		FPromise* Promise = nullptr;
+		
+		// 동기화 용
+		mutable FCriticalSection Lock;
 	};
 	
 	// 코루틴의 결과 값을 담는 템플릿 
 	template<typename T>
 	struct TCoroContext : public FCoroContext
 	{
-		void SetResult(T&& InResult) { Result = MoveTemp(InResult); }
+	public:
+		void SetResult(T&& InResult)
+		{
+			Result = MoveTemp(InResult);
+		}
+		
+		const T& GetResult() const
+		{
+			return Result;
+		}
+		
+		T&& MoveResult()
+		{
+			return MoveTemp(Result);
+		}
+		
+	private:
 		T Result{};
 	};
 	
 	// 코루틴의 결과 값이 void 인 템플릿
 	template<>
-	struct TCoroContext<void> : public FCoroContext {};
+	struct TCoroContext<void> : public FCoroContext
+	{
+		
+	};
 }

@@ -16,7 +16,7 @@ namespace Coro::Private
 		explicit TLatentAwaiterBase(UObject* InOwner) : Owner(InOwner) {}
 		
 		// 일단 정지 
-		bool await_ready() { return false; }
+		bool await_ready() const { return false; }
 		
 		// 멈춘 뒤 실행할 동작 설정
 		template<typename Promise>
