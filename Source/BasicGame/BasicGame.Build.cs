@@ -8,7 +8,18 @@ public class BasicGame : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 	
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "BasicCoroutine" });
+		PublicDependencyModuleNames.AddRange(
+			new string[]
+			{
+				"Core", 
+				"CoreUObject", 
+				"Engine", 
+				"InputCore", 
+				"BasicCoroutine", 
+				"CommonGame", 
+				"ModularGameplay",
+				"ModularGameplayActors"
+			});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
 

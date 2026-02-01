@@ -2,27 +2,22 @@
 
 using UnrealBuildTool;
 
-public class CommonGame : ModuleRules
+public class ModularGameplayActors : ModuleRules
 {
-	public CommonGame(ReadOnlyTargetRules Target) : base(Target)
+	public ModularGameplayActors(ReadOnlyTargetRules Target) : base(Target)
 	{
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
-		
-		PublicIncludePaths.AddRange(
-			new string[] {
-			}
-			);
+
 		
 		PublicDependencyModuleNames.AddRange(
 			new string[]
 			{
-				"Core",
+				"Core",		
 				"CoreUObject",
 				"Engine",
 				"Slate",
 				"SlateCore",
 				"ModularGameplay",
-				"ModularGameplayActors"
 			}
 			);
 	}
