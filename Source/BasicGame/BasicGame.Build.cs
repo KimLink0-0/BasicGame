@@ -18,7 +18,8 @@ public class BasicGame : ModuleRules
 				"BasicCoroutine", 
 				"CommonGame", 
 				"ModularGameplay",
-				"ModularGameplayActors"
+				"ModularGameplayActors",
+				"GameFeatures",
 			});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

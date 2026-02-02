@@ -28,6 +28,7 @@ public class BasicCoroutine : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
+				"GameFeatures"
 			}
 			);
 			
