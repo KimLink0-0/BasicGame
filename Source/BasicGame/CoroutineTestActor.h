@@ -7,6 +7,7 @@
 #include "GameFramework/Actor.h"
 #include "CoroutineTestActor.generated.h"
 
+
 UCLASS()
 class BASICGAME_API ACoroutineTestActor : public AActor
 {
@@ -19,5 +20,4 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-
 };
