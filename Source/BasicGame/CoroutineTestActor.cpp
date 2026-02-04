@@ -19,16 +19,16 @@ TCoroTask<void> ACoroutineTestActor::TimeCoroutineTestFunction(UObject* InOwner)
 	
 	co_await Coro::Latent::Seconds(InOwner, 3.0f);
 	
-	UE_LOG(LogCoro, Log, TEXT("코루틴 3초 대기 끝!"))
+	UE_LOG(LogCoro, Log, TEXT("코루틴 3초 대기 끝!"));
 	
 	co_return;
 }
-
 // Called when the game starts or when spawned
 void ACoroutineTestActor::BeginPlay()
 {
 	Super::BeginPlay();
 	
 	TimeCoroutineTestFunction(this);
+	
 }
 
