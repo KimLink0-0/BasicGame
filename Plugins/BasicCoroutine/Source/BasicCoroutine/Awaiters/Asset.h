@@ -36,7 +36,7 @@ namespace Coro::Private
 				SoftPtr.ToSoftObjectPath(),
 				FStreamableDelegate::CreateLambda([CaptureOwner = this->Owner, CaptureContext = this->Context]()
 				{
-					SafeResume(CaptureContext);
+					SafeResume(CaptureOwner, CaptureContext);
 				}
 				));
 		}
@@ -117,6 +117,12 @@ namespace Coro::Private
 				return true;
 			}
 			
+			// [수정] 번들이 지정되어 있다면, 에셋이 메모리에 있어도 번들 로딩을 위해 false 반환
+			if (Bundles.Num() > 0)
+			{
+				return false;
+			}
+			
 			return UAssetManager::Get().GetPrimaryAssetObject(AssetId) != nullptr;
 		}
 		
@@ -124,8 +130,9 @@ namespace Coro::Private
 		{
 			UAssetManager& AssetManager = UAssetManager::Get();
 			
-			StreamHandle = AssetManager.LoadPrimaryAsset(
-				AssetId,
+			// [수정] LoadPrimaryAssets (복수형) 사용
+			StreamHandle = AssetManager.LoadPrimaryAssets(
+				{AssetId},
 				Bundles,
 				FStreamableDelegate::CreateLambda([CapturedOwner = this->Owner, CapturedContext = this->Context]()
 					{

@@ -91,7 +91,7 @@ namespace Coro::Private
 		template<typename Promise>
 		void await_suspend(std::coroutine_handle<Promise> Handle)
 		{
-			Context = Handle.Promise().GetContextShared();
+			Context = Handle.promise().GetContextShared();
 			static_cast<Derived*>(this)->Suspend();
 		}
 		

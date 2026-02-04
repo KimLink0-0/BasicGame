@@ -27,7 +27,9 @@ namespace Coro::Private
 		FPromise& operator=(const FPromise&) = delete;
 		
 		// Context Getter
-		FCoroContextPtr GetContextForAwaiter() const { return Context;}
+		FCoroContextPtr GetContextForAwaiter() const { return Context; }
+		
+		FCoroContextPtr GetContextShared() const { return Context; }
 		
 		
 		/** Promise 필수 로직 **/
@@ -92,7 +94,7 @@ namespace Coro::Private
 		// [필수] return_value 처리 로직
 		void return_value(T Value)
 		{
-			static_cast<TCoroContext<T>*>(Context.Get())->SetValue(MoveTemp(Value));
+			static_cast<TCoroContext<T>*>(Context.Get())->SetResult(MoveTemp(Value));
 			Context->MarkCompleted();
 		}
 	};
