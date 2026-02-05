@@ -20,6 +20,7 @@ public class BasicGame : ModuleRules
 				"ModularGameplay",
 				"ModularGameplayActors",
 				"GameFeatures",
+				"NetCore",
 			});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

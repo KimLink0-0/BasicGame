@@ -6,6 +6,7 @@ public class CommonGame : ModuleRules
 {
 	public CommonGame(ReadOnlyTargetRules Target) : base(Target)
 	{
+		PrivateDependencyModuleNames.AddRange(new string[] { "BasicCoroutine" });
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
 		PublicIncludePaths.AddRange(
@@ -21,8 +22,11 @@ public class CommonGame : ModuleRules
 				"Engine",
 				"Slate",
 				"SlateCore",
+				"NetCore",
 				"ModularGameplay",
-				"ModularGameplayActors"
+				"ModularGameplayActors",
+				
+				"BasicCoroutine"
 			}
 			);
 	}
