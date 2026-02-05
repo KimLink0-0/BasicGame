@@ -8,7 +8,7 @@
 
 namespace Coro::Private
 {
-	class FPromise
+	class BASICCOROUTINE_API FPromise
 	{
 	public:
 		FPromise() = default;
@@ -27,7 +27,7 @@ namespace Coro::Private
 		FPromise& operator=(const FPromise&) = delete;
 		
 		// Context Getter
-		FCoroContextPtr GetContextForAwaiter() const { return Context; }
+		FCoroContext* GetContext() const { return Context.Get(); }
 		
 		FCoroContextPtr GetContextShared() const { return Context; }
 		
@@ -65,9 +65,9 @@ namespace Coro::Private
 		
 	protected:
 		// 코루틴 Getter, Setter 
-		
-		
 		void SetCoroutineHandle(std::coroutine_handle<> InHandle) { CoroutineHandle = InHandle; }
+		
+		std::coroutine_handle<> GetCoroutineHandle() const { return CoroutineHandle; }
 		
 	protected:
 		// Promise 와 Task 공유 Context

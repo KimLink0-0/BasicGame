@@ -50,6 +50,30 @@ namespace Coro::Private
 		}
 	}
 
+	void FCoroContext::AddCancellationCallback(TFunction<void()> Callback)
+	{
+		bool bShouldInvokeImmediately = false;
+
+		{
+		FScopeLock ScopeLock(&Lock);
+
+		// 이미 취소 요청됐으면 즉시 실행
+		if (bCancelRequested.load(std::memory_order_acquire))
+		{
+			bShouldInvokeImmediately = true;
+		}
+		else
+		{
+			CancellationCallbacks.Add(MoveTemp(Callback));
+		}
+		}
+
+		if (bShouldInvokeImmediately)
+		{
+			Callback();
+		}
+	}
+
 	void FCoroContext::Cancel()
 	{
 		TArray<TFunction<void()>> CallbacksToInvoke;
@@ -72,6 +96,16 @@ namespace Coro::Private
 		{
 			Callback();
 		}
+	}
+
+	bool FCoroContext::Wait(uint32 TimeoutMs) const
+	{
+		if (IsDone())
+		{
+			return true;
+		}
+
+		return CompletedEvent->Wait(TimeoutMs);
 	}
 
 	void FCoroContext::Resume() const

@@ -13,17 +13,17 @@ public:
 	TCoroTask() = default;
 	
 	explicit TCoroTask(FCoroContextPtr InContext) : 
-		Context(InContext) 
+		Context(MoveTemp(InContext)) 
 	{
 	}
 	
-	// // 복사 생성 가능
-	// TCoroTask(const TCoroTask&) = default;
-	// TCoroTask& operator=(const TCoroTask&) = default;
-	//
-	// // 데이터 이동 가능
-	// TCoroTask(TCoroTask&&) = default;
-	// TCoroTask& operator=(TCoroTask&&) = default;
+	// 복사 생성 가능
+	TCoroTask(const TCoroTask&) = default;
+	TCoroTask& operator=(const TCoroTask&) = default;
+	
+	// 데이터 이동 가능
+	TCoroTask(TCoroTask&&) = default;
+	TCoroTask& operator=(TCoroTask&&) = default;
 	
 	// 상태 읽기
 	
@@ -31,21 +31,21 @@ public:
 	
 	bool IsDone() const { return Context && Context->IsDone(); }
 	
-	// bool WasSuccessful() const { return Context.IsValid() /**&& Context->WasSuccessful()**/; }
+	bool WasSuccessful() const { return Context.IsValid() /**&& Context->WasSuccessful()**/; }
 	
 	// 상태 쓰기
-	// void Cancel()
-	// {
-	// 	if (Context)
-	// 	{
-	// 		Context->Cancel();
-	// 	}
-	// }
-	//
-	// bool Wait(uint32 TimeoutMs = MAX_uint32) const
-	// {
-	// 	return Context.IsValid() /** && Context->Wait(TimeoutMS) **/;
-	// }
+	void Cancel()
+	{
+		if (Context)
+		{
+			Context->Cancel();
+		}
+	}
+	
+	bool Wait(uint32 TimeoutMs = MAX_uint32) const
+	{
+		return Context.IsValid() /** && Context->Wait(TimeoutMS) **/;
+	}
 	
 	void ContinueWith(TFunction<void()> Callback) const
 	{
@@ -84,17 +84,17 @@ public:
 	{
 	}
 	
-	// const T& GetResult() const
-	// {
-	// 	check(IsDone());
-	// 	return this->template GetSharedContext<T>()->GetResult();
-	// }
-	//
-	// T&& MoveResult()
-	// {
-	// 	check(IsDone())
-	// 	return this->template GetSharedContext<T>()->MoveResult();
-	// }
+	const T& GetResult() const
+	{
+		check(IsDone());
+		return this->template GetSharedContext<T>()->GetResult();
+	}
+	
+	T&& MoveResult()
+	{
+		check(IsDone())
+		return this->template GetSharedContext<T>()->MoveResult();
+	}
 	
 	void ContinueWith(TFunction<void(const T&)> Callback) const
 	{

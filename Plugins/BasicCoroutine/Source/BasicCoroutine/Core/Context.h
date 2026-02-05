@@ -35,7 +35,11 @@ namespace Coro::Private
 		
 		void AddCompletionCallback(TFunction<void()> Callback);
 		
+		void AddCancellationCallback(TFunction<void()> Callback);
+		
 		void Cancel();
+		
+		bool Wait(uint32 TimeoutMs = MAX_uint32) const;
 		
 		void Resume() const;
 		
@@ -45,6 +49,8 @@ namespace Coro::Private
 		void SetPromise(FPromise* InPromise);
 		
 	protected:
+		FEventRef CompletedEvent;
+		
 		// 기본 상태: 대기 중
 		std::atomic<ECoroState> State = ECoroState::Pending;
 		
@@ -91,6 +97,5 @@ namespace Coro::Private
 	template<>
 	struct TCoroContext<void> : public FCoroContext
 	{
-		
 	};
 }

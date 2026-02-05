@@ -22,7 +22,7 @@ namespace Coro::Private
 		template<typename Promise>
 		void await_suspend(std::coroutine_handle<Promise> Handle)
 		{
-			FCoroContextPtr Context = Handle.promise().GetContextForAwaiter();
+			FCoroContextPtr Context = Handle.promise().GetContextShared();
 			
 			if (!Owner.IsValid())
 			{
@@ -98,7 +98,7 @@ namespace Coro::Private
 		//
 		auto await_resume()
 		{
-			if constexpr (requires { static_cast<const Derived*>(this)->GetResult(); })
+			if constexpr (requires { static_cast<Derived*>(this)->GetResult(); })
 			{
 				return static_cast<Derived*>(this)->GetResult();
 			}
