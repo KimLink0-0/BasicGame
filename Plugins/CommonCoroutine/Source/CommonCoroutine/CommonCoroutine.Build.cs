@@ -2,17 +2,18 @@
 
 using UnrealBuildTool;
 
-public class CommonGame : ModuleRules
+public class CommonCoroutine : ModuleRules
 {
-	public CommonGame(ReadOnlyTargetRules Target) : base(Target)
+	public CommonCoroutine(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PrivateDependencyModuleNames.AddRange(new string[] {  });
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
 		PublicIncludePaths.AddRange(
 			new string[] {
+				// ... add public include paths required here ...
 			}
 			);
+			
 		
 		PublicDependencyModuleNames.AddRange(
 			new string[]
@@ -20,16 +21,10 @@ public class CommonGame : ModuleRules
 				"Core",
 				"CoreUObject",
 				"Engine",
-				"Slate",
-				"SlateCore",
-				"NetCore",
-				"ModularGameplay",
-				"ModularGameplayActors",
-				"CommonCoroutine",
-				
-				"DeveloperTools",
-				
-				"GameFeatures"
+				"GameFeatures",
+				"GameplayAbilities",
+				"GameplayTags",
+				// ... add other public dependencies that you statically link with here ...
 			}
 			);
 	}

@@ -15,12 +15,15 @@ public class BasicGame : ModuleRules
 				"CoreUObject", 
 				"Engine", 
 				"InputCore", 
-				"BasicCoroutine", 
+				"CommonCoroutine",
 				"CommonGame", 
 				"ModularGameplay",
 				"ModularGameplayActors",
 				"GameFeatures",
+				"GameplayTags",
+				"GameplayAbilities",
 				"NetCore",
+				"DeveloperTools",
 			});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });

@@ -1,19 +1,22 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
-
+﻿// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "ExperienceManagerComponent.h"
 
-#include "BasicCoroutine/Awaiters/Time.h"
 #include "ExperienceDefinition.h"
-#include "BasicCoroutine/Awaiters/Asset.h"
-#include "BasicCoroutine/Awaiters/Delegate.h"
+#include "CommonCoroutine/Awaiters/Asset.h"
+#include "CommonCoroutine/Awaiters/Combinator.h"
+#include "CommonCoroutine/Awaiters/Delegate.h"
+#include "CommonCoroutine/Awaiters/Time.h"
+#include "DeveloperStatics.h"
+#include "GameFeaturesSubsystem.h"
+#include "GameFramework/GameStateBase.h"
 #include "Net/UnrealNetwork.h"
 #include "Net/Core/PushModel/PushModel.h"
+#include UE_INLINE_GENERATED_CPP_BY_NAME(ExperienceManagerComponent)
 
 DEFINE_LOG_CATEGORY(ExperienceManagerLog);
 
-UExperienceManagerComponent::UExperienceManagerComponent(const FObjectInitializer& ObjectInitializer) :
-	Super(ObjectInitializer)
+UExperienceManagerComponent::UExperienceManagerComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	SetIsReplicatedByDefault(true);
 }
@@ -21,33 +24,38 @@ UExperienceManagerComponent::UExperienceManagerComponent(const FObjectInitialize
 void UExperienceManagerComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	
+
 	FDoRepLifetimeParams Params;
 	Params.bIsPushBased = true;
-	
+
 	DOREPLIFETIME_WITH_PARAMS_FAST(ThisClass, CurrentExperienceId, Params);
+}
+
+void UExperienceManagerComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	DeactivateExperience();
 }
 
 void UExperienceManagerComponent::SetCurrentExperienceAuth(FPrimaryAssetId ExperienceId)
 {
 	check(GetOwner()->HasAuthority());
-	check(LoadState == EExperienceLoadState::Unloaded)
-	
-	CurrentExperienceId = ExperienceId;
+	check(LoadState == EExperienceLoadState::Unloaded);
+
+	UE_LOG(ExperienceManagerLog, Log, TEXT("Experience 설정: %s"), *ExperienceId.ToString());
+
+	CurrentExperienceId = MoveTemp(ExperienceId);
 	MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, CurrentExperienceId, this);
+
+	LoadExperienceCoroutine();
 }
 
 const UExperienceDefinition* UExperienceManagerComponent::GetCurrentExperienceChecked() const
 {
-	check (LoadState == EExperienceLoadState::Loaded);
-	check (CurrentExperience != nullptr);
+	check(LoadState == EExperienceLoadState::Loaded);
+	check(CurrentExperience != nullptr);
 	return CurrentExperience;
-}
-
-TCoroTask<const UExperienceDefinition*> UExperienceManagerComponent::WaitForExperienceLoadedStaticCoroutine(
-	UObject* WorldContextObject)
-{
-	co_return co_await WaitForExperienceLoadedInternalCoroutine(WorldContextObject);
 }
 
 void UExperienceManagerComponent::OnRep_CurrentExperienceId()
@@ -55,70 +63,167 @@ void UExperienceManagerComponent::OnRep_CurrentExperienceId()
 	LoadExperienceCoroutine();
 }
 
-TCoroTask<const UExperienceDefinition*> UExperienceManagerComponent::WaitForExperienceLoadedInternalCoroutine(UObject* WorldContextObject)
+TCoroTask<void> UExperienceManagerComponent::LoadExperienceCoroutine()
+{
+	check(LoadState == EExperienceLoadState::Unloaded || LoadState == EExperienceLoadState::Deactivating);
+	check(CurrentExperienceId.IsValid());
+
+	// 다음 틱까지 대기 (델리게이트 우선순위 문제)
+	co_await Coro::Latent::NextTick(this);
+
+	const TCHAR* NetRole = FDeveloperStatics::GetNetRoleString(GetOwner());
+
+	LoadState = EExperienceLoadState::Loading;
+
+	UE_LOG(ExperienceManagerLog, Log, TEXT("%s Experience 에셋 로드 시작: %s"), NetRole, *CurrentExperienceId.ToString());
+
+	CurrentExperience = co_await Coro::Async::LoadPrimaryAsset<UExperienceDefinition>(this, CurrentExperienceId, {});
+
+	if (!CurrentExperience)
+	{
+		UE_LOG(ExperienceManagerLog, Error, TEXT("%s Experience 에셋 로드 실패: %s"), NetRole, *CurrentExperienceId.ToString());
+		co_return;
+	}
+
+	UE_LOG(ExperienceManagerLog, Log, TEXT("%s Experience 에셋 로드 완료: %s"), NetRole, *CurrentExperience->GetName());
+
+	LoadState = EExperienceLoadState::LoadingGameFeatures;
+	GameFeaturePluginURLs.Reset();
+	
+	if (CurrentExperience->GameFeaturesToEnable.Num() > 0)
+	{
+		UGameFeaturesSubsystem& GFS = UGameFeaturesSubsystem::Get();
+	
+		UE_LOG(ExperienceManagerLog, Log, TEXT("%s GameFeature 병렬 로드 시작: %d개"), NetRole, CurrentExperience->GameFeaturesToEnable.Num());
+	
+		TArray<TCoroTask<void>> FeatureTasks;
+		for (const FPrimaryAssetId& GameFeatureId : CurrentExperience->GameFeaturesToEnable)
+		{
+			const FString PluginName = GameFeatureId.PrimaryAssetName.ToString();
+	
+			FString PluginURL;
+			if (!GFS.GetPluginURLByName(PluginName, PluginURL))
+			{
+				UE_LOG(ExperienceManagerLog, Error, TEXT("%s GameFeature 플러그인을 찾을 수 없습니다: %s"), NetRole, *PluginName);
+				continue;
+			}
+	
+			GameFeaturePluginURLs.Add(PluginURL);
+			FeatureTasks.Add(LoadGameFeatureCoroutine(PluginURL));
+		}
+	
+		co_await Coro::Async::WhenAll(this, MoveTemp(FeatureTasks));
+	}
+
+	LoadState = EExperienceLoadState::Loaded;
+
+	UE_LOG(ExperienceManagerLog, Log, TEXT("%s Experience 로드 완료: %s"), NetRole, *CurrentExperience->GetName());
+
+	OnExperienceLoaded_High.Broadcast(CurrentExperience);
+	OnExperienceLoaded_High.Clear();
+
+	OnExperienceLoaded_Normal.Broadcast(CurrentExperience);
+	OnExperienceLoaded_Normal.Clear();
+
+	OnExperienceLoaded_Low.Broadcast(CurrentExperience);
+	OnExperienceLoaded_Low.Clear();
+}
+
+TCoroTask<void> UExperienceManagerComponent::LoadGameFeatureCoroutine(FString PluginURL) const
+{
+	const TCHAR* NetRole = FDeveloperStatics::GetNetRoleString(GetOwner());
+	const bool bSuccess = co_await Coro::Async::LoadGameFeature(GetOwner(), PluginURL);
+
+	if (!bSuccess)
+	{
+		UE_LOG(ExperienceManagerLog, Error, TEXT("%s GameFeature 로드 실패: %s"), NetRole, *PluginURL);
+	}
+	else
+	{
+		UE_LOG(ExperienceManagerLog, Log, TEXT("%s GameFeature 로드 완료: %s"), NetRole, *PluginURL);
+	}
+}
+
+void UExperienceManagerComponent::DeactivateExperience()
+{
+	if (LoadState == EExperienceLoadState::Unloaded || LoadState == EExperienceLoadState::Deactivating)
+	{
+		return;
+	}
+
+	LoadState = EExperienceLoadState::Deactivating;
+
+	UGameFeaturesSubsystem& GFS = UGameFeaturesSubsystem::Get();
+
+	for (const FString& PluginURL : GameFeaturePluginURLs)
+	{
+		UE_LOG(ExperienceManagerLog, Log, TEXT("GameFeature 비활성화: %s"), *PluginURL);
+		GFS.DeactivateGameFeaturePlugin(PluginURL);
+	}
+
+	CurrentExperience = nullptr;
+	GameFeaturePluginURLs.Reset();
+	LoadState = EExperienceLoadState::Unloaded;
+}
+
+
+TCoroTask<const UExperienceDefinition*> UExperienceManagerComponent::WaitForExperienceLoaded_HighStaticCoroutine(UObject* WorldContextObject)
+{
+	co_return co_await WaitForExperienceLoadedInternalCoroutine(WorldContextObject, 0);
+}
+
+TCoroTask<const UExperienceDefinition*> UExperienceManagerComponent::WaitForExperienceLoadedStaticCoroutine(UObject* WorldContextObject)
+{
+	co_return co_await WaitForExperienceLoadedInternalCoroutine(WorldContextObject, 1);
+}
+
+TCoroTask<const UExperienceDefinition*> UExperienceManagerComponent::WaitForExperienceLoaded_LowStaticCoroutine(UObject* WorldContextObject)
+{
+	co_return co_await WaitForExperienceLoadedInternalCoroutine(WorldContextObject, 2);
+}
+
+TCoroTask<const UExperienceDefinition*> UExperienceManagerComponent::WaitForExperienceLoadedInternalCoroutine(UObject* WorldContextObject, int32 Priority)
 {
 	if (!WorldContextObject)
 	{
-		co_return nullptr;	
+		co_return nullptr;
 	}
-	
-	UExperienceManagerComponent* ExperienceManager = nullptr;
-	while (!ExperienceManager)
+
+	// GameState에서 ExperienceManagerComponent 찾기
+	UExperienceManagerComponent* Manager = nullptr;
+	while (!Manager)
 	{
 		UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
 		if (!World)
 		{
 			co_return nullptr;
 		}
-		
+
 		if (AGameStateBase* GameState = World->GetGameState())
 		{
-			ExperienceManager = GameState->FindComponentByClass<UExperienceManagerComponent>();
+			Manager = GameState->FindComponentByClass<UExperienceManagerComponent>();
 		}
-		
-		if (!ExperienceManager)
+
+		if (!Manager)
 		{
 			co_await Coro::Latent::NextTick(WorldContextObject);
 		}
 	}
-	
-	if (ExperienceManager->IsExperienceLoaded())
-	{
-		co_return ExperienceManager->GetCurrentExperienceChecked();
-	}
-	
-	co_return co_await Coro::Async::WaitForDelegate(ExperienceManager, ExperienceManager->OnExperienceLoaded);
-	
-}
 
-TCoroTask<void> UExperienceManagerComponent::LoadExperienceCoroutine()
-{
-	// 1. 로딩이 안됐거나 비활성화 상태이면 시작
-	check(LoadState == EExperienceLoadState::Unloaded || LoadState == EExperienceLoadState::Deactivating)
-	check(CurrentExperienceId.IsValid());
-	
-	// 대부분의 경우 GameState 생성된 다음 Tick 에 Pawn 생성 준비를 완료 : Experience 는 Pawn 에 대한 데이터를 설정해야 하니까
-	co_await Coro::Latent::NextTick(this);
-	
-	// 로딩 시작할게
-	LoadState = EExperienceLoadState::Loading;
-	
-	CurrentExperience = co_await Coro::Async::LoadPrimaryAsset<UExperienceDefinition>(this, CurrentExperienceId, {});
-	
-	if (!CurrentExperience)
+	// 이미 로드 완료된 경우
+	if (Manager->IsExperienceLoaded())
 	{
-		UE_LOG(ExperienceManagerLog, Error, TEXT("%s Experience 에셋 로드 실패"), *CurrentExperienceId.ToString())
-		co_return;
+		co_return Manager->GetCurrentExperienceChecked();
 	}
-	
-	// 게임 피쳐 로딩 로직 추가 예정
-	// LoadState = EExperienceLoadState::LoadingGameFeatures;
-	// GameFeaturePluginURLs.Reset();
-	
-	// Experience Load 완료 : 상태 Loaded 로 변경 및 Delegate Broadcast 진행
-	LoadState = EExperienceLoadState::Loaded;
-	
-	UE_LOG(ExperienceManagerLog, Log, TEXT("%s Experience 에셋 로드 완료"), *CurrentExperienceId.ToString())
-	
-	OnExperienceLoaded.Broadcast(CurrentExperience);
+
+	// 우선순위별 델리게이트 대기
+	switch (Priority)
+	{
+	case 0:
+		co_return co_await Coro::Async::WaitForDelegate(Manager, Manager->OnExperienceLoaded_High);
+	case 1:
+		co_return co_await Coro::Async::WaitForDelegate(Manager, Manager->OnExperienceLoaded_Normal);
+	default:
+		co_return co_await Coro::Async::WaitForDelegate(Manager, Manager->OnExperienceLoaded_Low);
+	}
 }

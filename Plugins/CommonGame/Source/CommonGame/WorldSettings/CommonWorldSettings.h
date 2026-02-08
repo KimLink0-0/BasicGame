@@ -16,10 +16,10 @@ class COMMONGAME_API ACommonWorldSettings : public AWorldSettings
 public:
 	ACommonWorldSettings(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 	
-	FPrimaryAssetId GetDefaultLevelExperienceId() const { return DefaultLevelExperienceId; }
+	FPrimaryAssetId GetDefaultExperienceId() const { return DefaultExperienceId; }
 	
 public:
 	// ExperienceDefinition 타입만 등록하고 싶으니까, ExperienceDefinition 전방 선언! 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Experience", meta = (AllowedTypes = "ExperienceDefinition"))
-	FPrimaryAssetId DefaultLevelExperienceId;
+	FPrimaryAssetId DefaultExperienceId;
 };
