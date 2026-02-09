@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Condition/ExtensionCondition.h"
+#include "StructUtils/InstancedStruct.h"
 #include "Execute/ExtensionExecute.h"
 #include "ActorExtension.generated.h"
 
@@ -22,10 +23,10 @@ public:
 	bool IsActivated() const { return bActivated; }
 	
 public:
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = "Extension")
 	TArray<TInstancedStruct<FExtensionCondition>> Conditions;
 	
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, Category = "Extension")
 	TArray<TInstancedStruct<FExtensionExecute>> Executes;
 	
 	
