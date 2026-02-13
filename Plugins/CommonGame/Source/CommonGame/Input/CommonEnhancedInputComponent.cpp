@@ -3,6 +3,8 @@
 
 #include "CommonEnhancedInputComponent.h"
 
+DEFINE_LOG_CATEGORY(CommonEnhancedInputComponentLog);
+
 void UCommonEnhancedInputComponent::SetNativeInputActionMappings(const TArray<FInputActionAndTag>& InMappings)
 {
 	NativeInputActionMappings = InMappings;

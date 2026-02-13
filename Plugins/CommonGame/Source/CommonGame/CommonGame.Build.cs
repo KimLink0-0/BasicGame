@@ -6,7 +6,6 @@ public class CommonGame : ModuleRules
 {
 	public CommonGame(ReadOnlyTargetRules Target) : base(Target)
 	{
-		PrivateDependencyModuleNames.AddRange(new string[] { "EnhancedInput", "EnhancedInput" });
 		PCHUsage = ModuleRules.PCHUsageMode.UseExplicitOrSharedPCHs;
 		
 		PublicIncludePaths.AddRange(
@@ -30,7 +29,14 @@ public class CommonGame : ModuleRules
 				"DeveloperTools",
 				
 				"GameFeatures",
-				"EnhancedInput"
+				"EnhancedInput",
+				"GameplayTags"
+			}
+			);
+
+		PrivateDependencyModuleNames.AddRange(
+			new string[]
+			{
 			}
 			);
 	}

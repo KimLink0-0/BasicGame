@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "EnhancedInputComponent.h"
+#include "GameplayTagContainer.h"
 #include "InputTypes.h"
 #include "CommonEnhancedInputComponent.generated.h"
 
@@ -39,7 +40,7 @@ public:
 	
 	// 파라미터가 없는 콜백 바인딩 : 점프, 재장전 등 토글 방식의 동작에 사용
 	template<class UserClass, typename... VarTypes>
-	uint32 BindNativeAction(const FGameplayTag& InputTag, ETriggerEvent TriggerEvent, UserClass* Object, TMemFunPtrType<false, UserClass, void(VarTypes)>::Type Func, VarTypes...Vars)
+	uint32 BindNativeAction(const FGameplayTag& InputTag, ETriggerEvent TriggerEvent, UserClass* Object, TMemFunPtrType<false, UserClass, void(VarTypes...)>::Type Func, VarTypes...Vars)
 	{
 		if (const UInputAction* Action = FindNativeActionByTag(InputTag))
 		{
